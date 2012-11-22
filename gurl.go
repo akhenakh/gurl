@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -30,6 +31,12 @@ var jsonFlag = flag.Bool("json", false, "Data items from the command line are se
 var formFlag = flag.Bool("form", true, " Data items are serialized as form fields. The Content-Type is set to application/x-www-form-urlencoded (if not specifid).\nThe presence of any file fields results into a multipart/form-data request.")
 var verboseFlag = flag.Bool("verbose", false, "Print the whole request as well as the response.")
 var indentFlag = flag.Bool("indent", true, "Indent known format like JSON.")
+
+type nopCloser struct {
+	io.Reader
+}
+
+func (nopCloser) Close() error { return nil }
 
 func sortHeader(m http.Header) []string {
 	// http.Header is a map[string][]string
@@ -84,6 +91,11 @@ func main() {
 	method := strings.ToUpper(args[1])
 	var req_body string
 
+	req, err := http.NewRequest(method, args[2], nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	switch method {
 	case "GET", "DELETE", "HEAD", "OPTIONS":
 	case "POST", "PUT":
@@ -98,13 +110,21 @@ func main() {
 				log.Fatal("Invalid parameter ", param)
 			}
 			// = form case
-
 			split_param := strings.Split(param, "=")
 			if len(split_param) > 2 {
 				log.Fatal("Invalid parameter ", param)
 			} else if len(split_param) == 2 {
 				req_body_tab = append(req_body_tab, url.QueryEscape(split_param[0])+"="+url.QueryEscape(split_param[1]))
 			}
+
+			// : header case
+			split_param = strings.Split(param, ":")
+			if len(split_param) > 2 {
+				log.Fatal("Invalid parameter ", param)
+			} else if len(split_param) == 2 {
+				req.Header.Add(split_param[0], split_param[1])
+			}
+
 		}
 		if len(req_body_tab) > 1 {
 			req_body = strings.Join(req_body_tab, "&")
@@ -116,14 +136,12 @@ func main() {
 		log.Fatal("Invalid method")
 	}
 
-	req, err := http.NewRequest(method, args[2], bytes.NewBufferString(req_body))
-	if err != nil {
-		log.Fatal(err)
-	}
+	req.Body = nopCloser{bytes.NewBufferString(req_body)}
 
 	if *formFlag {
 		req.Header.Add(`Content-Type`, `application/x-www-form-urlencoded; charset=utf-8`)
 	}
+
 	req.Header.Add(`User-Agent`, `Gurl`)
 
 	resp, err := http.DefaultClient.Do(req)
