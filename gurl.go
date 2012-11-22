@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -70,36 +71,85 @@ func main() {
 		log.Fatal(msg)
 	}
 
-	url, err := url.Parse(args[2])
-	if err != nil || url.Scheme[0:4] != "http" {
+	if (*formFlag && *jsonFlag) || (!*formFlag && !*jsonFlag) {
+		log.Fatal("Invalid usage json and form flag are mutually exclusive")
+	}
+
+	url_req, err := url.Parse(args[2])
+	if err != nil || url_req.Scheme[0:4] != "http" {
 		msg := fmt.Sprintf("Invalid URL %s\n", args[2])
 		log.Fatal(msg)
 	}
 
 	method := strings.ToUpper(args[1])
+	var req_body string
+
 	switch method {
-	case "GET", "POST", "DELETE", "PUT", "HEAD", "OPTIONS":
+	case "GET", "DELETE", "HEAD", "OPTIONS":
+	case "POST", "PUT":
+		// encode all values
+		if len(args) < 4 {
+			break
+		}
+
+		req_body_tab := make([]string, 1)
+		for _, param := range args[3:] {
+			if !strings.ContainsAny(param, ": @ =") {
+				log.Fatal("Invalid parameter ", param)
+			}
+			// = form case
+
+			split_param := strings.Split(param, "=")
+			if len(split_param) > 2 {
+				log.Fatal("Invalid parameter ", param)
+			} else if len(split_param) == 2 {
+				req_body_tab = append(req_body_tab, url.QueryEscape(split_param[0])+"="+url.QueryEscape(split_param[1]))
+			}
+		}
+		if len(req_body_tab) > 1 {
+			req_body = strings.Join(req_body_tab, "&")
+		} else if len(req_body_tab) == 1 {
+			req_body = req_body_tab[0]
+		}
+
 	default:
 		log.Fatal("Invalid method")
 	}
 
-	req, err := http.NewRequest(method, args[2], nil)
+	req, err := http.NewRequest(method, args[2], bytes.NewBufferString(req_body))
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if *formFlag {
+		req.Header.Add(`Content-Type`, `application/x-www-form-urlencoded; charset=utf-8`)
+	}
+	req.Header.Add(`User-Agent`, `Gurl`)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%s %s %s\n", req.Method, req.URL.RequestURI(), req.Proto)
+	req_dump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if *verboseFlag {
+		fmt.Printf("%s", req_dump)
+	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	/*resp_dump, err := httputil.DumpResponse(resp, true)
+	if err != nil {
+		log.Fatal(err)
+	} 
+	fmt.Printf("%s\n", resp_dump) */
 
 	for _, k := range sortHeader(resp.Header) {
 		fmt.Printf("%s: %s\n", k, strings.Join(resp.Header[k], ", "))
@@ -109,7 +159,7 @@ func main() {
 	if *indentFlag && isJSON(resp.Header) {
 		arr := make([]byte, 0, 1024*1024)
 		buf := bytes.NewBuffer(arr)
-		err := json.Indent(buf, body, "", "  ")
+		err := json.Indent(buf, body, "", "    ")
 		if err != nil {
 			fmt.Printf("\n%s\n\n", body)
 			log.Fatal(err)
