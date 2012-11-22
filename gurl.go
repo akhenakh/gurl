@@ -31,7 +31,7 @@ var jsonFlag = flag.Bool("json", false, "Data items from the command line are se
 var formFlag = flag.Bool("form", true, " Data items are serialized as form fields. The Content-Type is set to application/x-www-form-urlencoded (if not specifid).\nThe presence of any file fields results into a multipart/form-data request.")
 var verboseFlag = flag.Bool("verbose", false, "Print the whole request as well as the response.")
 var indentFlag = flag.Bool("indent", true, "Indent known format like JSON.")
-var versionFlag = flag.Bool("version", true, "Return version and exit")
+var versionFlag = flag.Bool("version", false, "Return version and exit")
 
 type nopCloser struct {
 	io.Reader
