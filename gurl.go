@@ -32,6 +32,8 @@ var formFlag = flag.Bool("form", true, " Data items are serialized as form field
 var verboseFlag = flag.Bool("verbose", false, "Print the whole request as well as the response.")
 var indentFlag = flag.Bool("indent", true, "Indent known format like JSON.")
 var versionFlag = flag.Bool("version", false, "Return version and exit")
+var authTypeFlag = flag.String("auth-type", "basic", "Set the authentication type, basic|oauth1_2l")
+var authFlag = flag.String("auth", "", "Authentication USER:PASS")
 
 type nopCloser struct {
 	io.Reader
@@ -87,6 +89,10 @@ func main() {
 		log.Fatal("Invalid usage json and form flag are mutually exclusive")
 	}
 
+	if *authTypeFlag != "basic" && *authTypeFlag != "digest" {
+		log.Fatal("Auth type is invalid")
+	}
+
 	url_req, err := url.Parse(args[2])
 	if err != nil || url_req.Scheme[0:4] != "http" {
 		msg := fmt.Sprintf("Invalid URL %s\n", args[2])
@@ -99,6 +105,20 @@ func main() {
 	req, err := http.NewRequest(method, args[2], nil)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if *authFlag != "" {
+		split_auth := strings.Split(*authFlag, ":")
+		if len(split_auth) != 2 {
+			log.Fatal("Invalid syntax for auth: ", *authFlag)
+		}
+
+		if *authFlag == "basic" {
+			req.SetBasicAuth(split_auth[0], split_auth[1])
+		} else if *authFlag == "oauth1_2l" {
+
+		}
+		// future usage for oauth1 2legged
 	}
 
 	switch method {
