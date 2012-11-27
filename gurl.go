@@ -18,15 +18,14 @@ import (
 	"strings"
 )
 
-// usage: http [--json | --form] [--pretty {all,colors,format,none}]
-//             [--style STYLE] [--print WHAT | --verbose | --headers | --body]
-//             [--stream]
-//             [--session SESSION_NAME | --session-read-only SESSION_NAME]
-//             [--auth USER[:PASS]] [--auth-type {basic,digest}]
-//             [--proxy PROTOCOL:HOST] [--follow] [--verify VERIFY]
-//             [--timeout SECONDS] [--check-status] [--help] [--version]
-//             [--traceback] [--debug]
-//             [METHOD] URL [REQUEST ITEM [REQUEST ITEM ...]]
+//TODO 
+// json POST
+// proxy
+// request status display
+// oauthv1 2legged
+// multipart/form-data
+// file support
+// timeout
 
 var jsonFlag = flag.Bool("json", false, "Data items from the command line are serialized as a JSON object.\nThe Content-Type and Accept headers are set to application/json (if not specified).")
 var formFlag = flag.Bool("form", true, " Data items are serialized as form fields. The Content-Type is set to application/x-www-form-urlencoded (if not specifid).\nThe presence of any file fields results into a multipart/form-data request.")
@@ -109,7 +108,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	req.Header.Set(`Content-Type`, `application/x-www-form-urlencoded; charset=utf-8`)
 	req.Header.Add(`User-Agent`, `Gurl`)
 	req.Header.Add(`Accept`, `*/*`)
 	req.Header.Add(`Accept-Encoding`, `identity, deflate, compress, gzip`)
@@ -132,6 +130,12 @@ func main() {
 	switch method {
 	case "GET", "DELETE", "HEAD", "OPTIONS":
 	case "POST", "PUT":
+		if *formFlag {
+			req.Header.Add(`Content-Type`, `application/x-www-form-urlencoded; charset=utf-8`)
+		} else {
+			req.Header.Add(`Content-Type`, `application/json`)
+		}
+
 		// encode all values
 		if len(args) < 4 {
 			break
