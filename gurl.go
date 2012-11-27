@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -30,10 +31,11 @@ import (
 var jsonFlag = flag.Bool("json", false, "Data items from the command line are serialized as a JSON object.\nThe Content-Type and Accept headers are set to application/json (if not specified).")
 var formFlag = flag.Bool("form", true, " Data items are serialized as form fields. The Content-Type is set to application/x-www-form-urlencoded (if not specifid).\nThe presence of any file fields results into a multipart/form-data request.")
 var verboseFlag = flag.Bool("verbose", false, "Print the whole request as well as the response.")
-var indentFlag = flag.Bool("indent", true, "Indent known format like JSON.")
+var indentFlag = flag.Bool("indent", true, "Indent known formats like JSON.")
 var versionFlag = flag.Bool("version", false, "Return version and exit")
 var authTypeFlag = flag.String("auth-type", "basic", "Set the authentication type, basic|oauth1_2l")
 var authFlag = flag.String("auth", "", "Authentication USER:PASS")
+var serverFlag = flag.String("server", "", "Hijack the server and port from url and connect to SERVER:PORT then send the real Host, usefull to debug with load balancer. ")
 
 type nopCloser struct {
 	io.Reader
@@ -121,6 +123,7 @@ func main() {
 		// future usage for oauth1 2legged
 	}
 
+	// test allowed methods
 	switch method {
 	case "GET", "DELETE", "HEAD", "OPTIONS":
 	case "POST", "PUT":
@@ -169,7 +172,26 @@ func main() {
 
 	req.Header.Add(`User-Agent`, `Gurl`)
 
-	resp, err := http.DefaultClient.Do(req)
+	// Hijack the connection if needed
+	host := url_req.Host
+	if *serverFlag != "" {
+		host = *serverFlag
+	}
+	
+	// add the default port if missing
+	split_host := strings.Split(host, ":")
+	if len(split_host) == 1 {
+		host += ":80"
+	}
+
+	client_tcp_conn, err := net.Dial("tcp", host)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	client_http_conn := httputil.NewClientConn(client_tcp_conn, nil)
+
+	resp, err := client_http_conn.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -178,6 +200,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if *verboseFlag {
 		fmt.Printf("%s", req_dump)
 	}
