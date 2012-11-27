@@ -19,7 +19,6 @@ import (
 )
 
 //TODO 
-// json POST
 // proxy
 // request status display
 // oauthv1 2legged
@@ -30,11 +29,11 @@ import (
 var jsonFlag = flag.Bool("json", false, "Data items from the command line are serialized as a JSON object.\nThe Content-Type and Accept headers are set to application/json (if not specified).")
 var formFlag = flag.Bool("form", true, " Data items are serialized as form fields. The Content-Type is set to application/x-www-form-urlencoded (if not specifid).\nThe presence of any file fields results into a multipart/form-data request.")
 var verboseFlag = flag.Bool("verbose", false, "Print the whole request as well as the response.")
-var indentFlag = flag.Bool("indent", true, "Indent known formats like JSON.")
+var noindentFlag = flag.Bool("noindent", false, "Do not indent known formats like JSON.")
 var versionFlag = flag.Bool("version", false, "Return version and exit")
 var authTypeFlag = flag.String("auth-type", "basic", "Set the authentication type, basic|oauth1_2l")
 var authFlag = flag.String("auth", "", "Authentication USER:PASS")
-var serverFlag = flag.String("server", "", "Hijack the server and port from url and connect to SERVER:PORT then send the real Host, usefull to debug with load balancer. ")
+var serverFlag = flag.String("server", "", "Connect to SERVER:PORT instead of the ones in the url then send the real Host, usefull to debug with load balancer. ")
 
 type nopCloser struct {
 	io.Reader
@@ -190,7 +189,7 @@ func main() {
 
 	req.Body = nopCloser{bytes.NewBufferString(req_body)}
 
-	// Hijack the connection if needed
+	// Hijack the host if needed
 	host := url_req.Host
 	if *serverFlag != "" {
 		host = *serverFlag
@@ -202,6 +201,7 @@ func main() {
 		host += ":80"
 	}
 
+	// create the connection
 	client_tcp_conn, err := net.Dial("tcp", host)
 	if err != nil {
 		log.Fatal(err)
@@ -229,29 +229,29 @@ func main() {
 		log.Fatal(err)
 	}
 
-	/*resp_dump, err := httputil.DumpResponse(resp, true)
+	resp_dump, err := httputil.DumpResponse(resp, false)
 	if err != nil {
 		log.Fatal(err)
-	} 
-	fmt.Printf("%s\n", resp_dump) */
-
-	for _, k := range sortHeader(resp.Header) {
-		fmt.Printf("%s: %s\n", k, strings.Join(resp.Header[k], ", "))
 	}
+	fmt.Printf("%s", resp_dump)
+
+	/*for _, k := range sortHeader(resp.Header) {
+		fmt.Printf("%s: %s\n", k, strings.Join(resp.Header[k], ", "))
+	}*/
 
 	// Indent JSON code if needed
-	if *indentFlag && isJSON(resp.Header) {
+	if !*noindentFlag && isJSON(resp.Header) {
 		//TODO: allocated twice the size of the body ?
 		arr := make([]byte, 0, 1024*1024)
 		buf := bytes.NewBuffer(arr)
 		err := json.Indent(buf, body, "", "    ")
 		if err != nil {
-			fmt.Printf("\n%s\n\n", body)
+			fmt.Printf("%s\n\n", body)
 			log.Fatal(err)
 		}
-		fmt.Printf("\n%s\n", buf)
+		fmt.Printf("%s\n", buf)
 	} else {
-		fmt.Printf("\n%s\n", body)
+		fmt.Printf("%s\n", body)
 	}
 
 }
