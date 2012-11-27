@@ -109,6 +109,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	req.Header.Set(`Content-Type`, `application/x-www-form-urlencoded; charset=utf-8`)
+	req.Header.Add(`User-Agent`, `Gurl`)
+	req.Header.Add(`Accept`, `*/*`)
+	req.Header.Add(`Accept-Encoding`, `identity, deflate, compress, gzip`)
+
 	if *authFlag != "" {
 		split_auth := strings.Split(*authFlag, ":")
 		if len(split_auth) != 2 {
@@ -144,15 +149,6 @@ func main() {
 			} else if len(split_param) == 2 {
 				req_body_tab = append(req_body_tab, url.QueryEscape(split_param[0])+"="+url.QueryEscape(split_param[1]))
 			}
-
-			// : header case
-			split_param = strings.Split(param, ":")
-			if len(split_param) > 2 {
-				log.Fatal("Invalid parameter ", param)
-			} else if len(split_param) == 2 {
-				req.Header.Add(split_param[0], split_param[1])
-			}
-
 		}
 		if len(req_body_tab) > 1 {
 			req_body = strings.Join(req_body_tab, "&")
@@ -164,20 +160,29 @@ func main() {
 		log.Fatal("Invalid method")
 	}
 
-	req.Body = nopCloser{bytes.NewBufferString(req_body)}
-
-	if *formFlag {
-		req.Header.Add(`Content-Type`, `application/x-www-form-urlencoded; charset=utf-8`)
+	for _, param := range args[3:] {
+		// : header case
+		split_param := strings.Split(param, ":")
+		if len(split_param) > 2 {
+			log.Fatal("Invalid parameter ", param)
+		} else if len(split_param) == 2 {
+			// case Accept: to remove the default accept
+			if split_param[1] == "" {
+				req.Header.Del(split_param[0])
+			} else {
+				req.Header.Set(split_param[0], split_param[1])
+			}
+		}
 	}
 
-	req.Header.Add(`User-Agent`, `Gurl`)
+	req.Body = nopCloser{bytes.NewBufferString(req_body)}
 
 	// Hijack the connection if needed
 	host := url_req.Host
 	if *serverFlag != "" {
 		host = *serverFlag
 	}
-	
+
 	// add the default port if missing
 	split_host := strings.Split(host, ":")
 	if len(split_host) == 1 {
@@ -223,6 +228,7 @@ func main() {
 
 	// Indent JSON code if needed
 	if *indentFlag && isJSON(resp.Header) {
+		//TODO: allocated twice the size of the body ?
 		arr := make([]byte, 0, 1024*1024)
 		buf := bytes.NewBuffer(arr)
 		err := json.Indent(buf, body, "", "    ")
