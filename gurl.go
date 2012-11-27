@@ -86,8 +86,8 @@ func main() {
 		log.Fatal(msg)
 	}
 
-	if (*formFlag && *jsonFlag) || (!*formFlag && !*jsonFlag) {
-		log.Fatal("Invalid usage json and form flag are mutually exclusive")
+	if *jsonFlag {
+		*formFlag = false
 	}
 
 	if *authTypeFlag != "basic" && *authTypeFlag != "digest" {
@@ -128,9 +128,10 @@ func main() {
 
 	// test allowed methods
 	switch method {
+	// usefull hack to make this validated like a if x in [a, b]
 	case "GET", "DELETE", "HEAD", "OPTIONS":
 	case "POST", "PUT":
-		if *formFlag {
+		if *formFlag == true {
 			req.Header.Add(`Content-Type`, `application/x-www-form-urlencoded; charset=utf-8`)
 		} else {
 			req.Header.Add(`Content-Type`, `application/json`)
@@ -141,23 +142,31 @@ func main() {
 			break
 		}
 
-		req_body_tab := make([]string, 1)
+		req_body_map := map[string]string{}
+
 		for _, param := range args[3:] {
 			if !strings.ContainsAny(param, ": @ =") {
 				log.Fatal("Invalid parameter ", param)
 			}
-			// = form case
+			// = params case
 			split_param := strings.Split(param, "=")
 			if len(split_param) > 2 {
 				log.Fatal("Invalid parameter ", param)
 			} else if len(split_param) == 2 {
-				req_body_tab = append(req_body_tab, url.QueryEscape(split_param[0])+"="+url.QueryEscape(split_param[1]))
+				req_body_map[split_param[0]] = split_param[1]
 			}
 		}
-		if len(req_body_tab) > 1 {
-			req_body = strings.Join(req_body_tab, "&")
-		} else if len(req_body_tab) == 1 {
-			req_body = req_body_tab[0]
+		if *formFlag {
+			for k, v := range req_body_map {
+				req_body += url.QueryEscape(k) + "=" + url.QueryEscape(v) + "&"
+			}
+		} else {
+			// json encode
+			b, err := json.Marshal(req_body_map)
+			if err != nil {
+				log.Fatal(err)
+			}
+			req_body = string(b)
 		}
 
 	default:
