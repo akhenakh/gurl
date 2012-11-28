@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Gurl</title>
+    <!-- Bootstrap -->
+    <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.2.1/css/bootstrap-combined.min.css" rel="stylesheet">
+  </head>
+	<body>
+
+	    <div class="navbar navbar-inverse navbar-fixed-top">
+	      <div class="navbar-inner">
+	        <div class="container">
+	          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	            <span class="icon-bar"></span>
+	          </a>
+	          <a class="brand" href="#">Gurl</a>
+	          <div class="nav-collapse collapse">
+	            <ul class="nav">
+	              <li class="active"><a href="#">Home</a></li>
+	            </ul>
+	          </div><!--/.nav-collapse -->
+	        </div>
+	      </div>
+	    </div>
+
+	    <div class="container">
+
+	      <!-- Main hero unit for a primary marketing message or call to action -->
+	      <div class="hero-unit">
+	        <h1>Gurl</h1>
+	        <p>A better curl in Go language.</p>
+	      </div>
+
+		  <h2>Main Features</h2>
+		  <ul>
+		    <li>Static binary, thanks to Go</li>
+			<li>Submit and indent JSON format</li>
+			<li>Forms</li>
+			<li>Custom Headers</li>
+			<li>Load balancers tester</li>
+		  </ul>
+
+		  <h2> Usage </h2>
+		  <p>Synopsis:</p>
+		  <pre>gurl [flags] [METHOD] URL [ITEM [ITEM]]</pre>
+		  <p>See also gurl -help.</p>
+	      
+		  <h3>Examples</h3>
+		  <p>Submitting forms as x-www-form-urlencoded.</p>
+		  <pre>gurl POST example.org name=bob</pre>
+		  <pre>HTTP/1.1 200 OK
+Content-Length: 0
+Connection: keep-alive
+Content-Type: application/json
+Date: Wed, 28 Nov 2012 09:31:03 GMT
+Server: gunicorn/0.13.4
+
+{}       </pre>
+		 <p>See the request that is being sent.</p>
+		 <pre>gurl -verbose GET myapi.org</pre>
+		 <pre>POST / HTTP/1.1
+Host: myapi.org
+Accept: */*
+Accept-Encoding: identity, deflate, compress, gzip
+Content-Type: application/json
+User-Agent: Gurl
+
+HTTP/1.1 200 OK
+Content-Length: 0
+Connection: keep-alive
+Content-Type: application/json
+Date: Wed, 28 Nov 2012 09:31:03 GMT
+Server: gunicorn/0.13.4
+
+{}</pre>
+		<p>Submitting as application/json</p>
+		<pre>gurl -json POST httpbin.org/post name=bob</pre>
+		<p>Change a header use ":" serator</p>
+		<pre>gurl GET httpbin.org X-Id:42</pre>
+		<p>Direct connection to a specified host, makes testing website easier, especially load balanced ones</p>
+		<pre>gurl -verbose -server=myfront1 GET mywebsite.com </pre>
+		<pre>GET / HTTP/1.1
+Host: mywebsite.com
+Accept: */*
+Accept-Encoding: identity, deflate, compress, gzip
+User-Agent: Gurl
+
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Connection: keep-alive
+Content-Type: text/html
+Date: Wed, 28 Nov 2012 09:36:56 GMT
+Last-Modified: Mon, 08 May 2006 19:39:45 GMT
+Server: nginx/1.2.5
+
+OK</pre>
+		
+		  <hr>
+		  
+		  
+
+	      <footer>
+	        <p>Fabrice Aneche</p>
+	      </footer>
+
+	    </div> <!-- /container -->
+
+	  </body>
+</html>
