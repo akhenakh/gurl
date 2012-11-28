@@ -36,16 +36,17 @@
 	      <!-- Main hero unit for a primary marketing message or call to action -->
 	      <div class="hero-unit">
 	        <h1>Gurl</h1>
-	        <p>A better curl in Go language.</p>
+	        <p>A better curl (in Go language).</p>
 	      </div>
 
 		  <h2>Main Features</h2>
 		  <ul>
-		    <li>Static binary, thanks to Go</li>
+		    <li>Static binary, no dependencies, thanks to Go</li>
 			<li>Submit and indent JSON format</li>
 			<li>Forms</li>
 			<li>Custom Headers</li>
 			<li>Load balancers tester</li>
+                        <li>Basic auth</li>
 		  </ul>
 
 		  <h2> Usage </h2>
@@ -86,7 +87,8 @@ Server: gunicorn/0.13.4
 		<p>Change a header use ":" serator</p>
 		<pre>gurl GET httpbin.org X-Id:42</pre>
 		<p>Direct connection to a specified host, makes testing website easier, especially load balanced ones</p>
-		<pre>gurl -verbose -server=myfront1 GET mywebsite.com </pre>
+		<pre>gurl -verbose -server=myfront1:8000 GET mywebsite.com </pre>
+                <p> it will connect to myfront1 port 8000 then ask for mywebsite.com </p>
 		<pre>GET / HTTP/1.1
 Host: mywebsite.com
 Accept: */*
