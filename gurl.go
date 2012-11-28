@@ -14,13 +14,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
 //TODO 
 // proxy
-// request status display
 // oauthv1 2legged
 // multipart/form-data
 // file support
@@ -40,19 +38,6 @@ type nopCloser struct {
 }
 
 func (nopCloser) Close() error { return nil }
-
-func sortHeader(m http.Header) []string {
-	// http.Header is a map[string][]string
-	// map is already a reference type no need for a pointer
-	mk := make([]string, len(m))
-	i := 0
-	for k, _ := range m {
-		mk[i] = k
-		i++
-	}
-	sort.Strings(mk)
-	return mk
-}
 
 func isJSON(m http.Header) bool {
 	if content_type := m["Content-Type"]; content_type != nil {
@@ -94,7 +79,11 @@ func main() {
 	}
 
 	url_req, err := url.Parse(args[2])
-	if err != nil || url_req.Scheme[0:4] != "http" {
+	if url_req.Scheme == "" {
+		new_url := "http://" + args[2]
+		url_req, err = url.Parse(new_url)
+	}
+	if err != nil {
 		msg := fmt.Sprintf("Invalid URL %s\n", args[2])
 		log.Fatal(msg)
 	}
@@ -102,7 +91,7 @@ func main() {
 	method := strings.ToUpper(args[1])
 	var req_body string
 
-	req, err := http.NewRequest(method, args[2], nil)
+	req, err := http.NewRequest(method, url_req.String(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -234,10 +223,6 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s", resp_dump)
-
-	/*for _, k := range sortHeader(resp.Header) {
-		fmt.Printf("%s: %s\n", k, strings.Join(resp.Header[k], ", "))
-	}*/
 
 	// Indent JSON code if needed
 	if !*noindentFlag && isJSON(resp.Header) {
