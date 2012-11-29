@@ -200,7 +200,10 @@ func main() {
 
 	resp, err := client_http_conn.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		// a Connection: close is not an error
+		if err != httputil.ErrPersistEOF {
+			log.Fatal(err)
+		}
 	}
 
 	req_dump, err := httputil.DumpRequest(req, true)
