@@ -98,7 +98,6 @@ func main() {
 
 	req.Header.Add(`User-Agent`, `Gurl`)
 	req.Header.Add(`Accept`, `*/*`)
-	req.Header.Add(`Accept-Encoding`, `identity, deflate, compress, gzip`)
 
 	if *authFlag != "" {
 		split_auth := strings.Split(*authFlag, ":")
