@@ -220,7 +220,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dump, err := httputil.DumpResponse(resp, false)
+	dump, err = httputil.DumpResponse(resp, false)
 	if err != nil {
 		log.Fatal(err)
 	}
